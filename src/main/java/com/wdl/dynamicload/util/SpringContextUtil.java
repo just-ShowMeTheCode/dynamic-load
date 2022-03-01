@@ -1,5 +1,8 @@
 package com.wdl.dynamicload.util;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.annotations.Mapper;
 import org.springframework.beans.BeansException;
@@ -15,15 +18,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.List;
-
 /**
- * <p>Title: SpringContextUtil</p>
- * <p>Description: ClassDescription</p>
- * <p>Copyright: Copyright (c) 2020</p>
+ * <p>
+ * Title: SpringContextUtil
+ * </p>
+ * <p>
+ * Description: ClassDescription
+ * </p>
+ * <p>
+ * Copyright: Copyright (c) 2020
+ * </p>
  *
  * @author wangdali
  * @version 1.0
@@ -55,29 +59,31 @@ public class SpringContextUtil implements ApplicationContextAware {
         return applicationContext.getBean(beanName, clazz);
     }
 
-    public static void registerBean(Class ... classes) {
-        ConfigurableApplicationContext configurableApplicationContext = (ConfigurableApplicationContext) SpringContextUtil.getApplicationContext();
-        //获取BeanFactory
-        DefaultListableBeanFactory factory = (DefaultListableBeanFactory) configurableApplicationContext.getBeanFactory();
-        RequestMappingHandlerMapping requestMappingHandlerMapping = (RequestMappingHandlerMapping) factory.getBean(RequestMappingHandlerMapping.class);
-        List<BeanDefinition> beanDefinitions = new ArrayList<>();
+    public static void registerBean(Class... classes) {
+        ConfigurableApplicationContext configurableApplicationContext =
+            (ConfigurableApplicationContext)SpringContextUtil.getApplicationContext();
+        // 获取BeanFactory
+        DefaultListableBeanFactory factory =
+            (DefaultListableBeanFactory)configurableApplicationContext.getBeanFactory();
+        RequestMappingHandlerMapping requestMappingHandlerMapping =
+            (RequestMappingHandlerMapping)factory.getBean(RequestMappingHandlerMapping.class);
         for (Class clazz : classes) {
             BeanDefinition beanDefinition = BeanDefinitionBuilder.genericBeanDefinition(clazz).getBeanDefinition();
             beanDefinition.setScope(BeanDefinition.SCOPE_SINGLETON);
-            if (factory.containsBeanDefinition(getBeanNameByClass(clazz.getName()))) {
-                throw new RuntimeException("DynamicLoad Exception："+ clazz.getName() +" bean repeat load");
+            String beanName = clazz.getName();
+            if (factory.containsBeanDefinition(beanName)) {
+                factory.removeBeanDefinition(beanName);
             }
-            beanDefinitions.add(beanDefinition);
+            factory.registerBeanDefinition(beanName, beanDefinition);
         }
-        beanDefinitions.forEach(beanDefinition -> {
-            factory.registerBeanDefinition(getBeanNameByClass(beanDefinition.getBeanClassName()), beanDefinition);
-        });
+
         for (Class clazz : classes) {
             if (clazz.getAnnotation(RestController.class) != null) {
                 try {
-                    Method method= requestMappingHandlerMapping.getClass().getSuperclass().getSuperclass().getDeclaredMethod("detectHandlerMethods",Object.class);
+                    Method method = requestMappingHandlerMapping.getClass().getSuperclass().getSuperclass()
+                        .getDeclaredMethod("detectHandlerMethods", Object.class);
                     method.setAccessible(true);
-                    method.invoke(requestMappingHandlerMapping,getBeanNameByClass(clazz.getName()));
+                    method.invoke(requestMappingHandlerMapping, getBeanNameByClass(clazz.getName()));
                 } catch (IllegalAccessException e) {
                     e.printStackTrace();
                 } catch (NoSuchMethodException e) {
@@ -89,10 +95,10 @@ public class SpringContextUtil implements ApplicationContextAware {
         }
     }
 
-    public static void removeBean(Class ... classes) {
-        DefaultListableBeanFactory factory = (DefaultListableBeanFactory) SpringContextUtil.getApplicationContext();
+    public static void removeBean(Class... classes) {
+        DefaultListableBeanFactory factory = (DefaultListableBeanFactory)SpringContextUtil.getApplicationContext();
         for (Class clazz : classes) {
-            factory.removeBeanDefinition(getBeanNameByClass(clazz.getName()));
+            factory.removeBeanDefinition(clazz.getName());
         }
     }
 
@@ -101,7 +107,8 @@ public class SpringContextUtil implements ApplicationContextAware {
     }
 
     public static boolean isSpringBeanClass(Class clazz) {
-        if (clazz != null && (clazz.getAnnotation(Controller.class) != null || clazz.getAnnotation(RestController.class) != null
+        if (clazz != null
+            && (clazz.getAnnotation(Controller.class) != null || clazz.getAnnotation(RestController.class) != null
                 || clazz.getAnnotation(Service.class) != null || clazz.getAnnotation(Mapper.class) != null)) {
             return true;
         }

@@ -1,1 +1,54 @@
+spring:
+  datasource:
+    schema: classpath:db/schema-h2.sql
+    dynamic:
+      primary: master
+      datasource:
+        master:
+          driver-class-name: org.h2.Driver
+          url: jdbc:h2:mem:test
+          username: sa
+          password: sa
+    hikari:
+      idle-timeout: 230000
+      max-lifetime: 235000
+      minimum-idle: 5
+      maximum-pool-size: 15
+      auto-commit: true
+  h2:
+    #    开启console 访问 默认false
+    console:
+      enabled: true
+      settings:
+        #      开启h2 console 跟踪 方便调试  默认 false
+        trace: true
+        #      允许console 远程访问 默认false
+        web-allow-others: true
+      #  h2 访问路径上下文
+      path: /h2-console
 
+
+# 日志
+logging:
+  level:
+    cn:
+      felord: debug
+
+mybatis-plus:
+  mapperLocations:
+    - classpath:mapper/*/*.xml
+  configuration:
+    #空值返回key
+    call-setters-on-nulls: true
+    # 支持Entity中字段定义为Java Enum枚举类型
+    default-enum-type-handler:
+      org.apache.ibatis.type.EnumOrdinalTypeHandler
+    # 解决查询返回结果含null没有对应字段值问题
+    map-underscore-to-camel-case: true
+    #    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    # 存储字段策略 0:忽略判断; 1:非null判断; 2:非null非空值判断
+    field-strategy: 0
+  global-config:
+    db-config:
+      logic-delete-value: 1
+      logic-not-delete-value: 0
